@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon-192.png" type="image/png">
+    <meta charset="UTF-8">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Strahlenschutz-Rechner (Offline-Version)</title>
+    <style>
+        /* BASE STYLES */
+        :root {
+            --color-indigo: #4f46e5;
+            --color-indigo-dark: #3730a3;
+            --color-teal: #0d9488;
+            --color-teal-light: #e0f2f1;
+            --color-red-error: #dc2626;
+            --color-red-light: #fecaca;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* LAYOUT CONTAINER (max-width: 480px, centered) */
+        .container {
+            max-width: 480px;
+            margin: auto;
+            padding: 1rem;
+        }
+
+        /* CARD STYLE (white background, shadow, rounded corners) */
+        .card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Hiding utility for tabs */
+        .hidden {
+            display: none;
+        }
+
+        /* HEADLINE STYLES */
+        .header {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700; /* font-bold */
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #1f2937; /* text-gray-800 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header svg {
+            width: 2rem; /* w-8 */
+            height: 2rem; /* h-8 */
+            margin-right: 0.75rem; /* mr-3 */
+        }
+        .subheader {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600; /* font-semibold */
+            margin-bottom: 1rem;
+            color: var(--color-indigo-dark);
+        }
+        .text-info {
+            font-size: 0.875rem; /* text-sm */
+            color: #4b5563; /* text-gray-600 */
+            margin-bottom: 1rem;
+            /* Feste Höhe, damit die Textfelder nicht springen */
+            min-height: 2.5rem; 
+        }
+
+        /* NAVIGATION BAR - ANDROID/iOS OPTIMIZED */
+        .nav-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around; /* Verbesserte Klickbarkeit der Buttons */
+            gap: 0.2rem; /* Reduzierter Gap */
+            margin-bottom: 1.5rem;
+            padding: 0.5rem;
+            background-color: var(--color-indigo);
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .nav-button {
+            flex-grow: 1;
+            padding: 0.5rem;
+            font-size: 0.75rem; /* text-xs */
+            font-weight: 600;
+            color: white;
+            border-radius: 0.5rem;
+            transition: background-color 0.15s, opacity 0.15s;
+            border: none;
+            cursor: pointer;
+            min-width: 30%; /* Angepasst, um 7 Buttons auf 2 Zeilen zu verteilen */
+            background-color: var(--color-indigo);
+            opacity: 0.75;
+            margin: 0.2rem; /* Hinzugefügter Rand für bessere Touch-Erkennung */
+            /* Damit A-Tags wie Buttons aussehen */
+            text-decoration: none; 
+            display: flex; 
+            justify-content: center;
+            align-items: center;
+        }
+        .nav-button:hover {
+            opacity: 1;
+        }
+        .nav-button.active {
+            background-color: var(--color-indigo-dark);
+            opacity: 1;
+        }
+
+        /* FORM ELEMENTS */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151; /* text-gray-700 */
+        }
+        /* Styling für TEXT und SELECT */
+        input[type="text"], input[type="number"], select { 
+            border: 1px solid #d1d5db;
+            padding: 0.75rem;
+            border-radius: 8px;
+            width: 100%;
+            margin-top: 0.25rem;
+            transition: border-color 0.15s ease-in-out;
+            box-sizing: border-box; /* Crucial for full width */
+        }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        
+        /* WICHTIGE ZUSÄTZLICHE iOS/SAFARI FIXES */
+        /* Verhindert den proprietären Safari-Fokus-Ring, wenn das Eingabefeld ein :focus-Stil hat. */
+        input:focus, select:focus, button:focus {
+            -webkit-tap-highlight-color: transparent; /* Entfernt den hellblauen Klick-Overlay */
+            -webkit-appearance: none; /* Kann helfen, bestimmte iOS-Stile zu entfernen */
+        }
+        
+        /* Erzwingt eine Schriftgröße, die iOS nicht automatisch zoomt (optional, aber nützlich) */
+        input[type="text"], input[type="number"], select {
+            font-size: 16px; 
+        }
+
+        /* BUTTONS */
+        .main-button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--color-indigo);
+            color: white;
+            font-weight: 700;
+            border-radius: 0.5rem;
+            transition: background-color 0.15s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        .main-button:hover {
+            background-color: var(--color-indigo-dark);
+        }
+
+        /* RESULT BOX */
+        .result-box {
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: var(--color-teal-light); /* Light Teal Background */
+            color: var(--color-teal); /* Dark Teal Text */
+            font-weight: 600;
+            text-align: center;
+            margin-top: 1rem;
+            border: 2px solid var(--color-teal);
+        }
+        .result-box.error {
+            background-color: var(--color-red-light);
+            border-color: var(--color-red-error);
+            color: var(--color-red-error);
+        }
+        .result-title {
+            font-weight: 700;
+            font-size: 1.125rem; /* text-lg */
+        }
+        .result-value {
+            font-size: 1.5rem; /* text-2xl */
+            margin-top: 0.25rem;
+        }
+
+        /* UTILITIES & FLEX (for time inputs) */
+        .flex-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .flex-item {
+            flex: 1 1 0%;
+        }
+        .text-center-sm {
+            font-size: 0.75rem;
+            text-align: center;
+            color: #6b7280; /* text-gray-500 */
+            margin-top: 1rem;
+            padding: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="header">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-8 h-8 mr-3">
+            <circle cx="50" cy="50" r="50" fill="#FFC72C" />
+            
+            <path fill="#000000" d="M50 50 L50 16 A34 34 0 0 1 84.7 33.7 L72.8 40.5 A22 22 0 0 0 50 28 Z" transform="rotate(0 50 50)"/>
+            <path fill="#000000" d="M50 50 L50 16 A34 34 0 0 1 84.7 33.7 L72.8 40.5 A22 22 0 0 0 50 28 Z" transform="rotate(120 50 50)"/>
+            <path fill="#000000" d="M50 50 L50 16 A34 34 0 0 1 84.7 33.7 L72.8 40.5 A22 22 0 0 0 50 28 Z" transform="rotate(240 50 50)"/>
+            
+            <circle cx="50" cy="50" r="10" fill="#000000"/>
+        </svg>
+        Strahlenschutz-Rechner
+    </h1>
+
+    <div class="nav-bar">
+        <button id="nav-distanz" onclick="showScreen('distanz')" class="nav-button active">Abstand</button>
+        <button id="nav-einheit" onclick="showScreen('einheit')" class="nav-button">Einheiten</button>
+        <button id="nav-dauer" onclick="showScreen('dauer')" class="nav-button">Dauer</button>
+        <button id="nav-total-dose" onclick="showScreen('total-dose')" class="nav-button">Gesamtdosis</button>
+        <button id="nav-tkz" onclick="showScreen('tkz')" class="nav-button">TKZ/DL</button>
+        <button id="nav-aktivitaet" onclick="showScreen('aktivitaet')" class="nav-button">Aktivität</button>
+        <button id="nav-schutzwert" onclick="showScreen('schutzwert')" class="nav-button">Schutzwert</button>
+        <a href="ADR_Info.pdf" target="_blank" id="nav-ADR-Info" class="nav-button">ADR-Info</a>
+    </div>
+
+    <div id="screen-distanz" class="card">
+        <h2 class="subheader">1. Quadratisches Abstandsgesetz</h2>
+        <p class="text-info">Berechnet die neue Dosisleistung (H2) in μSv/h bei einem neuen Abstand (r2). Formel: H2 = H1 * (r1² / r2²)</p>
+
+        <div class="flex-col">
+            <div class="form-group">
+                <label for="dosisleistung1" class="form-label">Bekannte Dosisleistung (H1) in μSv/h</label>
+                <input type="text" id="dosisleistung1" value="100" placeholder="z.B. 100" inputmode="decimal"> 
+            </div>
+            
+            <div class="form-group">
+                <label for="abstand1" class="form-label">Bekannter Abstand (r1) in m</label>
+                <input type="text" id="abstand1" placeholder="z.B. 0.1" inputmode="decimal"> 
+            </div>
+            
+            <div class="form-group">
+                <label for="abstand2" class="form-label">Neuer Abstand (r2) in m</label>
+                <input type="text" id="abstand2" placeholder="z.b. 0.5" inputmode="decimal"> 
+            </div>
+
+            <button onclick="calculateDistanz()" class="main-button">
+                Neue Dosisleistung (H2) berechnen
+            </button>
+
+            <div id="result-distanz" class="result-box hidden"></div>
+        </div>
+    </div>
+
+    <div id="screen-einheit" class="card hidden">
+        <h2 class="subheader">2. Dosisleistungs-Umrechner</h2>
+        <p class="text-info">Umrechnung zwischen Sv, mSv und μSv (pro Stunde).</p>
+
+        <div class="flex-col">
+            <div class="form-group">
+                <label for="wert-einheit" class="form-label">Wert eingeben</label>
+                <input type="text" id="wert-einheit" value="100" placeholder="z.B. 100" inputmode="decimal">
+            </div>
+            
+            <div class="form-group">
+                <label for="einheit-quelle" class="form-label">Quell-Einheit wählen</label>
+                <select id="einheit-quelle">
+                    <option value="micro">Mikrosievert/Stunde (μSv/h)</option>
+                    <option value="milli">Millisievert/Stunde (mSv/h)</option>
+                    <option value="sievert">Sievert/Stunde (Sv/h)</option>
+                </select>
+            </div>
+
+            <button onclick="calculateEinheit()" class="main-button">
+                Umrechnen
+            </button>
+
+            <div id="result-einheit" class="result-box hidden"></div>
+        </div>
+    </div>
+
+    <div id="screen-dauer" class="card hidden">
+        <h2 class="subheader">3. Maximale Aufenthaltsdauer</h2>
+        <p class="text-info">Berechnet die maximal zulässige Aufenthaltsdauer (t) für eine Zieldosis. Formel: t = Zieldosis / Dosisleistung</p>
+
+        <div class="flex-col">
+            <div class="form-group">
+                <label for="dosisleistung-dauer" class="form-label">Aktuelle Dosisleistung in μSv/h</label>
+                <input type="text" id="dosisleistung-dauer" value="50" placeholder="z.B. 50" inputmode="decimal">
+            </div>
+            
+            <div class="form-group">
+                <label for="zieldosis-dauer" class="form-label">Zieldosis in μSv</label>
+                <input type="text" id="zieldosis-dauer" value="200" placeholder="z.B. 200" inputmode="decimal">
+            </div>
+
+            <button onclick="calculateDauer()" class="main-button">
+                Aufenthaltsdauer berechnen
+            </button>
+
+            <div id="result-dauer" class="result-box hidden"></div>
+        </div>
+    </div>
+    
+    <div id="screen-total-dose" class="card hidden">
+        <h2 class="subheader">4. Aufgenommene Gesamtdosis</h2>
+        <p class="text-info">Berechnet die Gesamtdosis (H) in μSv, basierend auf Leistung und Zeit. Formel: H = Dosisleistung * Zeit</p>
+
+        <div class="flex-col">
+            <div class="form-group">
+                <label for="dosisleistung-total" class="form-label">Aktuelle Dosisleistung in μSv/h</label>
+                <input type="text" id="dosisleistung-total" value="100" placeholder="z.B. 100" inputmode="decimal">
+            </div>
+            
+            <div class="flex-row">
+                <div class="flex-item form-group">
+                    <label for="stunden-total" class="form-label">Stunden</label>
+                    <input type="number" id="stunden-total" value="0" min="0" placeholder="z.B. 1" inputmode="numeric"> </div>
+                <div class="flex-item form-group">
+                    <label for="minuten-total" class="form-label">Minuten</label>
+                    <input type="number" id="minuten-total" value="30" min="0" max="59" placeholder="z.B. 30" inputmode="numeric">
+                </div>
+                <div class="flex-item form-group">
+                    <label for="sekunden-total" class="form-label">Sekunden</label>
+                    <input type="number" id="sekunden-total" value="0" min="0" max="59" placeholder="z.B. 0" inputmode="numeric">
+                </div>
+            </div>
+
+            <button onclick="calculateTotalDose()" class="main-button">
+                Gesamtdosis berechnen
+            </button>
+
+            <div id="result-total-dose" class="result-box hidden"></div>
+        </div>
+    </div>
+
+    <div id="screen-tkz" class="card hidden">
+        <h2 class="subheader">5. Transportkennzahl in Dosisleistung umrechnen</h2>
+        <p class="text-info">Die Transportkennzahl (TKZ) ist die Dosisleistung in μSv/h in 1 Meter Abstand, aufgerundet auf die erste Dezimalstelle.</p>
+
+        <div class="flex-col">
+            
+            <div class="form-group">
+                <label for="eingabe-tkz" class="form-label">Transportkennzahl (TKZ)</label>
+                <input type="text" id="eingabe-tkz" placeholder="z.B. 1.2" inputmode="decimal">
+            </div>
+
+            <div class="form-group">
+                <label for="eingabe-tkz-dl" class="form-label">Dosisleistung in μSv/h in 1 m</label>
+                <input type="text" id="eingabe-tkz-dl" placeholder="z.B. 11.5" inputmode="decimal">
+            </div>
+
+            <button onclick="calculateTKZ()" class="main-button">
+                Berechnen/Überprüfen
+            </button>
+
+            <div id="result-tkz" class="result-box hidden"></div>
+        </div>
+    </div>
+    
+    <div id="screen-aktivitaet" class="card hidden">
+        <h2 class="subheader">6. Aktivität nach Dosisleistung</h2>
+        <p class="text-info">Berechnet die Dosisleistung (H) an einem Abstand (r) basierend auf Aktivität (A) und Dosisleistungskonstante (Gamma-H). Formel: H = (A * Gamma-H) / r²</p>
+
+        <div class="flex-col">
+            
+            <div class="flex-row">
+                <div class="flex-item form-group">
+                    <label for="aktivitaet-wert" class="form-label">Aktivität (A)</label>
+                    <input type="text" id="aktivitaet-wert" value="5" placeholder="z.B. 5" inputmode="decimal">
+                </div>
+                <div class="flex-item form-group">
+                    <label for="aktivitaet-einheit" class="form-label">Einheit wählen</label>
+                    <select id="aktivitaet-einheit">
+                        <option value="Bq">Becquerel (Bq)</option>
+                        <option value="kBq">Kilobecquerel (kBq)</option>
+                        <option value="MBq" selected>Megabecquerel (MBq)</option>
+                        <option value="GBq">Gigabecquerel (GBq)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="dosisleistungskonstante-select" class="form-label">Dosisleistungskonstante (Gamma-H)</label>
+                <select id="dosisleistungskonstante-select" onchange="toggleManualGammaH()">
+                    <option value="0.0883" selected>Cs-137 (0,0883)</option>
+                    <option value="0.35">Co-60 (0,35)</option>
+                    <option value="0.13">Ir-192 (0,13)</option>
+                    <option value="0.004">Am-241 (0,004)</option>
+                    <option value="0.066">I-131 (0,066)</option>
+                    <option value="0.18">F-18 (0,18)</option>
+                    <option value="0.0216">Tc-99m (0,0216)</option>
+                    <option value="0.0076">Lu-177 (0,0076)</option>
+                    <option value="manuell">Manueller Wert eingeben</option>
+                </select>
+                <input type="text" id="dosisleistungskonstante-manuell" class="hidden" placeholder="z.B. 0.05" inputmode="decimal" style="margin-top: 0.5rem;">
+                <p style="font-size:0.7rem; color:#6b7280; margin-top:0.2rem;">Einheit: μSv·m²/h·MBq</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="abstand-aktivitaet" class="form-label">Abstand (r) in Meter (m)</label>
+                <input type="text" id="abstand-aktivitaet" value="1" placeholder="z.B. 1" inputmode="decimal">
+            </div>
+
+            <button onclick="calculateAktivitaet()" class="main-button">
+                Dosisleistung berechnen
+            </button>
+
+            <div id="result-aktivitaet" class="result-box hidden"></div>
+        </div>
+    </div>
+    
+    <div id="screen-schutzwert" class="card hidden">
+        <h2 class="subheader">7. Abschirmung/Schutzwert</h2>
+        <p class="text-info">Berechnet den Schutzwert (S) der Abschirmung. Formel: S = Dosisleistung(ohne) / Dosisleistung(mit)</p>
+
+        <div class="flex-col">
+            
+            <div class="form-group">
+                <label for="dl-ohne-abschirmung" class="form-label">Dosisleistung OHNE Abschirmung in μSv/h</label>
+                <input type="text" id="dl-ohne-abschirmung" value="300" placeholder="z.B. 300" inputmode="decimal">
+            </div>
+            
+            <div class="form-group">
+                <label for="dl-mit-abschirmung" class="form-label">Dosisleistung MIT Abschirmung in μSv/h</label>
+                <input type="text" id="dl-mit-abschirmung" value="120" placeholder="z.B. 120" inputmode="decimal">
+            </div>
+
+            <button onclick="calculateSchutzwert()" class="main-button">
+                Schutzwert (S) berechnen
+            </button>
+
+            <div id="result-schutzwert" class="result-box hidden"></div>
+        </div>
+    </div>
+
+
+    <p class="text-center-sm">Alle Berechnungen sind Näherungen und dienen nur als Hilfsmittel.</p>
+
+</div>
+
+<script>
+    // Funktion, um das Dezimaltrennzeichen von Punkt zu Komma zu ändern
+    function formatToGerman(number, precision) {
+        // Nutzt toLocaleString für korrekte Komma-Ausgabe
+        return number.toLocaleString('de-DE', { useGrouping: false, minimumFractionDigits: precision, maximumFractionDigits: precision });
+    }
+    
+    /**
+     * ROBUSTE HILFSFUNKTION FÜR EINGABE (Unterstützt Komma und Punkt und liest Platzhalter)
+     */
+    function getInputValue(elementId) {
+        const element = document.getElementById(elementId);
+        // Wert nehmen (oder Platzhalter, falls leer)
+        let value = element.value || element.placeholder;
+        // Kommas zu Punkten umwandeln FÜR DIE BERECHNUNG
+        value = value.replace(',', '.'); 
+        // Sicherstellen, dass der Wert eine gültige Zahl ist, bevor er zurückgegeben wird
+        const result = parseFloat(value);
+        return isNaN(result) ? NaN : result; 
+    }
+
+    // --- Globale Funktionen für die App-Navigation ---
+    
+    // Die Screens und Buttons werden nur einmal beim Laden des Skripts abgerufen.
+    const screens = {
+        'distanz': document.getElementById('screen-distanz'),
+        'einheit': document.getElementById('screen-einheit'),
+        'dauer': document.getElementById('screen-dauer'),
+        'total-dose': document.getElementById('screen-total-dose'),
+        'tkz': document.getElementById('screen-tkz'),         
+        'aktivitaet': document.getElementById('screen-aktivitaet'), 
+        'schutzwert': document.getElementById('screen-schutzwert') 
+    };
+    
+    const navButtons = {
+        'distanz': document.getElementById('nav-distanz'),
+        'einheit': document.getElementById('nav-einheit'),
+        'dauer': document.getElementById('nav-dauer'),
+        'total-dose': document.getElementById('nav-total-dose'),
+        'tkz': document.getElementById('nav-tkz'),           
+        'aktivitaet': document.getElementById('nav-aktivitaet'), 
+        'schutzwert': document.getElementById('nav-schutzwert') 
+        // nav-ADR-Info ist jetzt ein direkter Link und wird nicht mehr über showScreen() verwaltet.
+    };
+
+    /**
+     * Zeigt den ausgewählten Bildschirm an und blendet die anderen aus.
+     */
+    function showScreen(screenId) {
+        for (const id in screens) {
+            // Screen Logik
+            if (screens[id]) { // Prüfen, ob das Element existiert
+                if (id === screenId) {
+                    screens[id].classList.remove('hidden');
+                } else {
+                    screens[id].classList.add('hidden');
+                }
+            }
+
+            // Button Logik
+            if (navButtons[id]) { // Prüfen, ob der Button existiert
+                if (id === screenId) {
+                    navButtons[id].classList.add('active');
+                } else {
+                    navButtons[id].classList.remove('active');
+                }
+            }
+        }
+        
+        // Stellt sicher, dass der ADR-Link nicht die aktive Klasse hat, wenn ein Rechner ausgewählt wird
+        const adrLink = document.getElementById('nav-ADR-Info');
+        if (adrLink) {
+            adrLink.classList.remove('active');
+        }
+    }
+
+    // Initialisierung: Zeige den ersten Screen beim Laden
+    window.addEventListener('load', function() {
+        // Dies ist der zuverlässigste Weg, um sicherzustellen, dass das Skript läuft, nachdem alle Elemente geladen wurden.
+        showScreen('distanz');
+    });
+
+
+    // --- 1. Quadratisches Abstandsgesetz ---
+    function calculateDistanz() {
+        const h1 = getInputValue('dosisleistung1');
+        const r1 = getInputValue('abstand1');
+        const r2 = getInputValue('abstand2');
+        const resultBox = document.getElementById('result-distanz');
+        
+        if (isNaN(h1) || isNaN(r1) || isNaN(r2) || h1 <= 0 || r1 <= 0 || r2 <= 0) {
+            resultBox.classList.remove('hidden');
+            resultBox.classList.add('error');
+            resultBox.innerHTML = 'Bitte alle Felder mit gültigen Werten (> 0) ausfüllen.';
+            return;
+        }
+        
+        resultBox.classList.remove('error');
+        const h2 = h1 * (Math.pow(r1, 2) / Math.pow(r2, 2));
+        const h2Formatted = formatToGerman(h2, 3);
+
+        resultBox.innerHTML = `
+            <div class="result-title">Neue Dosisleistung (H2):</div>
+            <div class="result-value">${h2Formatted} μSv/h</div>
+        `;
+        resultBox.classList.remove('hidden');
+    }
+
+    // --- 2. Einheiten-Umrechner (Dosisleistung) ---
+    function calculateEinheit() {
+        const wert = getInputValue('wert-einheit');
+        const quelle = document.getElementById('einheit-quelle').value;
+        const resultBox = document.getElementById('result-einheit');
+
+        if (isNaN(wert)) {
+            resultBox.classList.remove('hidden');
+            resultBox.classList.add('error');
+            resultBox.innerHTML = 'Bitte einen gültigen Wert eingeben.';
+            return;
+        }
+        
+        resultBox.classList.remove('error');
+
+        let inMicroSvH; 
+        switch (quelle) {
+            case 'micro':
+                inMicroSvH = wert;
+                break;
+            case 'milli':
+                inMicroSvH = wert * 1000;
+                break;
+            case 'sievert':
+                inMicroSvH = wert * 1000000;
+                break;
+            default:
+                inMicroSvH = 0;
+        }
+
+        const milliSvH = inMicroSvH / 1000;
+        const svH = inMicroSvH / 1000000;
+
+        resultBox.innerHTML = `
+            <div class="result-title mb-2">Ergebnis (alle in pro Stunde):</div>
+            <p><strong>Mikrosievert:</strong> ${formatToGerman(inMicroSvH, 6)} μSv/h</p>
+            <p><strong>Millisievert:</strong> ${formatToGerman(milliSvH, 6)} mSv/h</p>
+            <p><strong>Sievert:</strong> ${formatToGerman(svH, 9)} Sv/h</p>
+        `;
+        resultBox.classList.remove('hidden');
+    }
+
+    // --- 3. Aufenthaltsdauer-Rechner ---
+    function calculateDauer() {
+        const dosisleistung = getInputValue('dosisleistung-dauer');
+        const zieldosis = getInputValue('zieldosis-dauer');
+        const resultBox = document.getElementById('result-dauer');
+
+        if (isNaN(dosisleistung) || isNaN(zieldosis) || dosisleistung <= 0 || zieldosis <= 0) {
+            resultBox.classList.remove('hidden');
+            resultBox.classList.add('error');
+            resultBox.innerHTML = 'Bitte alle Felder mit gültigen Werten (> 0) ausfüllen.';
+            return;
+        }
+
+        resultBox.classList.remove('error');
+        const dauerInStunden = zieldosis / dosisleistung;
+        
+        const stunden = Math.floor(dauerInStunden);
+        const minutenGesamt = (dauerInStunden - stunden) * 60;
+        const minuten = Math.floor(minutenGesamt);
+        const sekunden = Math.round((minutenGesamt - minuten) * 60);
+
+        const dauerFormatted = formatToGerman(dauerInStunden, 2);
+
+        resultBox.innerHTML = `
+            <div class="result-title">Maximale Aufenthaltsdauer:</div>
+            <div class="result-value">${dauerFormatted} Stunden</div>
+            <div style="font-size: 0.875rem; margin-top: 0.25rem; color: #374151;">(${stunden} Stunden, ${minuten} Minuten und ${sekunden} Sekunden)</div>
+        `;
+        resultBox.classList.remove('hidden');
+    }
+
+    // --- 4. Aufgenommene Gesamtdosis ---
+    function calculateTotalDose() {
+        const dosisleistung = getInputValue('dosisleistung-total');
+        // Für die Zeitfelder nutzen wir den normalen Wert, da es ganze Zahlen sind
+        const stunden = parseFloat(document.getElementById('stunden-total').value || 0);
+        const minuten = parseFloat(document.getElementById('minuten-total').value || 0);
+        const sekunden = parseFloat(document.getElementById('sekunden-total').value || 0);
+        const resultBox = document.getElementById('result-total-dose');
+
+        if (isNaN(dosisleistung) || dosisleistung <= 0 || isNaN(stunden) || isNaN(minuten) || isNaN(sekunden)) {
+            resultBox.classList.remove('hidden');
+            resultBox.classList.add('error');
+            resultBox.innerHTML = 'Bitte alle Felder mit gültigen Werten ausfüllen. Dosisleistung muss > 0 sein.';
+            return;
+        }
+
+        resultBox.classList.remove('error');
+        
+        const gesamtzeitInStunden = stunden + (minuten / 60) + (sekunden / 3600);
+        const totalDosis = dosisleistung * gesamtzeitInStunden;
+        const totalDosisFormatted = formatToGerman(totalDosis, 3);
+
+        resultBox.innerHTML = `
+            <div class="result-title">Aufgenommene Gesamtdosis:</div>
+            <div class="result-value">${totalDosisFormatted} μSv</div>
+        `;
+        resultBox.classList.remove('hidden');
+    }
+
+    // --- 5. Transportkennzahl (TKZ) <-> Dosisleistung ---
+    function calculateTKZ() {
+        const tkzInput = getInputValue('eingabe-tkz');
+        const dlInput = getInputValue('eingabe-tkz-dl');
+        const resultBox = document.getElementById('result-tkz');
+
+        if ((isNaN(tkzInput) && isNaN(dlInput)) || (isNaN(tkzInput) && dlInput <= 0) || (isNaN(dlInput) && tkzInput <= 0)) {
+            resultBox.classList.remove('hidden');
+            resultBox.classList.add('error');
+            resultBox.innerHTML = 'Bitte mindestens ein Feld mit einem gültigen Wert (> 0) ausfüllen.';
+            return;
+        }
+        
+        resultBox.classList.remove('error');
+        let tkz, dl, dlFormatted;
+
+        if (!isNaN(dlInput) && dlInput > 0) {
+            dl = dlInput;
+            tkz = Math.ceil(dl * 10) / 10;
+        } 
+        else if (!isNaN(tkzInput) && tkzInput > 0) {
+            tkz = tkzInput;
+            dl = tkz; 
+        } else {
+            resultBox.classList.add('error');
+            resultBox.innerHTML = 'Ein Fehler ist aufgetreten.';
+            return;
+        }
+
+        dlFormatted = formatToGerman(dl, 3);
+        const tkzFormatted = formatToGerman(tkz, 1);
+
+        resultBox.innerHTML = `
+            <div class="result-title">Ergebnisse:</div>
+            <p><strong>Dosisleistung (DL, Grenzwert in 1 m):</strong> ${dlFormatted} μSv/h</p>
+            <p><strong>Transportkennzahl (TKZ):</strong> ${tkzFormatted}</p>
+        `;
+        resultBox.classList.remove('hidden');
+    }
+    
+    // --- 6. Aktivität -> Dosisleistung (Dosisleistungskonstante) ---
+
+    // Funktion zum Ein-/Ausblenden des manuellen Feldes
+    function toggleManualGammaH() {
+        const select = document.getElementById('dosisleistungskonstante-select');
+        const manualInput = document.getElementById('dosisleistungskonstante-manuell');
+        
+        if (select.value === 'manuell') {
+            manualInput.classList.remove('hidden');
+            manualInput.value = ''; // Eingabefeld leeren, um den Fokus zu lenken
+            manualInput.focus();
+        } else {
+            manualInput.classList.add('hidden');
+        }
+    }
+
+    function convertActivityToMBq(value, unit) {
+        switch (unit) {
+            case 'Bq':
+                return value / 1000000;
+            case 'kBq':
+                return value / 1000;
+            case 'MBq':
+                return value;
+            case 'GBq':
+                return value * 1000;
+            default:
+                return 0;
+        }
+    }
+
+    function calculateAktivitaet() {
+        const A_Value = getInputValue('aktivitaet-wert');
+        const A_Unit = document.getElementById('aktivitaet-einheit').value;
+        const GammaH_Select = document.getElementById('dosisleistungskonstante-select').value;
+        const resultBox = document.getElementById('result-aktivitaet');
+
+        let GammaH;
+
+        if (GammaH_Select === 'manuell') {
+            // Wenn "Manuell" gewählt ist, den Wert aus dem manuellen Feld holen
+            GammaH = getInputValue('dosisleistungskonstante-manuell');
+        } else {
+            // Ansonsten den Wert aus der Auswahlbox verwenden
+            GammaH = parseFloat(GammaH_Select);
+        }
+
+        const r = getInputValue('abstand-aktivitaet');
+        
+
+        if (isNaN(A_Value) || isNaN(GammaH) || isNaN(r) || A_Value < 0 || GammaH <= 0 || r <= 0) {
+            resultBox.classList.remove('hidden');
+            resultBox.classList.add('error');
+            resultBox.innerHTML = 'Bitte alle Felder mit gültigen Werten (> 0 für Gamma-H und Abstand) ausfüllen.';
+            return;
+        }
+        
+        const A_MBq = convertActivityToMBq(A_Value, A_Unit);
+
+        if (A_MBq === 0) {
+            resultBox.classList.remove('error');
+            resultBox.innerHTML = `
+                <div class="result-title">Berechnete Dosisleistung:</div>
+                <div class="result-value">0,000 μSv/h</div>
+                <div style="font-size: 0.875rem; margin-top: 0.25rem; color: #374151;">Aktivität (A) ist Null.</div>
+            `;
+            resultBox.classList.remove('hidden');
+            return;
+        }
+
+        resultBox.classList.remove('error');
+        const dl = (A_MBq * GammaH) / Math.pow(r, 2);
+        const dlFormatted = formatToGerman(dl, 3);
+        const gammaHFormatted = formatToGerman(GammaH, 5);
+
+
+        resultBox.innerHTML = `
+            <div class="result-title">Berechnete Dosisleistung:</div>
+            <div class="result-value">${dlFormatted} μSv/h</div>
+            <div style="font-size: 0.875rem; margin-top: 0.25rem; color: #374151;">
+                Verwendete Gamma-Konstante: ${gammaHFormatted} μSv·m²/h·MBq.
+            </div>
+        `;
+        resultBox.classList.remove('hidden');
+    }
+    
+    // --- 7. Abschirmung/Schutzwert ---
+    function calculateSchutzwert() {
+        const dl0 = getInputValue('dl-ohne-abschirmung');
+        const dlx = getInputValue('dl-mit-abschirmung');
+        const resultBox = document.getElementById('result-schutzwert');
+
+        if (isNaN(dl0) || isNaN(dlx) || dl0 <= 0 || dlx < 0) {
+            resultBox.classList.remove('hidden');
+            resultBox.classList.add('error');
+            resultBox.innerHTML = 'Bitte alle Felder mit gültigen Werten (> 0 für Dosisleistung OHNE Abschirmung) ausfüllen.';
+            return;
+        }
+        
+        if (dlx === 0) {
+            resultBox.classList.remove('error');
+            resultBox.innerHTML = `
+                <div class="result-title">Schutzwert (S):</div>
+                <div class="result-value">> 1000</div>
+                <div style="font-size: 0.875rem; margin-top: 0.25rem; color: #374151;">(Messwert mit Abschirmung ist Null)</div>
+            `;
+            resultBox.classList.remove('hidden');
+            return;
+        }
+        
+        const schutzwert = dl0 / dlx;
+        const schutzwertFormatted = formatToGerman(schutzwert, 3);
+
+        resultBox.classList.remove('error');
+        resultBox.innerHTML = `
+            <div class="result-title">Schutzwert (S):</div>
+            <div class="result-value">${schutzwertFormatted}</div>
+        `;
+        resultBox.classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
